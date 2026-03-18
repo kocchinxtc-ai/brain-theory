@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>脳ってゲームエンジンだった件 🎮</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
+
+  :root {
+    --bg: #0f1923;
+    --card: #162030;
+    --border: #1e3048;
+    --text: #e8f0f8;
+    --dim: #7a9ab8;
+    --yellow: #ffd93d;
+    --green: #6bcb77;
+    --red: #ff6b6b;
+    --blue: #4ecdc4;
+    --orange: #ff9f43;
+    --purple: #a29bfe;
+    --pink: #fd79a8;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Zen Maru Gothic', 'Hiragino Kaku Gothic ProN', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.8;
+    font-size: 15px;
+  }
+
+  /* Hero */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 40px 20px;
+    position: relative;
+    overflow: hidden;
+    background: radial-gradient(ellipse at 50% 40%, #1a2d4a 0%, #0f1923 70%);
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: 
+      radial-gradient(circle at 20% 30%, rgba(78,205,196,0.07) 0%, transparent 40%),
+      radial-gradient(circle at 80% 70%, rgba(253,121,168,0.07) 0%, transparent 40%);
+    pointer-events: none;
+  }
+
+  .hero-emoji {
+    font-size: 72px;
+    margin-bottom: 20px;
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+  }
+
+  .hero h1 {
+    font-size: clamp(24px, 5vw, 42px);
+    font-weight: 900;
+    color: var(--yellow);
+    margin-bottom: 12px;
+    line-height: 1.3;
+  }
+
+  .hero-sub {
+    font-size: clamp(13px, 2.5vw, 17px);
+    color: var(--dim);
+    margin-bottom: 32px;
+    max-width: 480px;
+  }
+
+  .hero-badge {
+    display: inline-block;
+    background: rgba(255,217,61,0.12);
+    border: 1px solid rgba(255,217,61,0.3);
+    color: var(--yellow);
+    padding: 6px 18px;
+    border-radius: 99px;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    margin-bottom: 20px;
+  }
+
+  .scroll-hint {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--dim);
+    font-size: 12px;
+    animation: bounce 2s ease-in-out infinite;
+  }
+
+  @keyframes bounce {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(6px); }
+  }
+
+  /* Content wrapper */
+  .wrapper { max-width: 680px; margin: 0 auto; padding: 0 20px 80px; }
+
+  /* Big question */
+  .big-q {
+    text-align: center;
+    padding: 60px 0 40px;
+  }
+  .big-q h2 {
+    font-size: clamp(20px, 4vw, 28px);
+    font-weight: 900;
+    color: var(--text);
+    line-height: 1.5;
+  }
+  .big-q h2 span { color: var(--yellow); }
+
+  /* Section cards */
+  .section {
+    margin-bottom: 48px;
+  }
+
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .section-num {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 900;
+    flex-shrink: 0;
+  }
+
+  .section-title {
+    font-size: 18px;
+    font-weight: 900;
+    color: var(--text);
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+
+  .card p { color: #c8d8e8; margin-bottom: 12px; }
+  .card p:last-child { margin-bottom: 0; }
+  .card strong { font-weight: 700; }
+
+  /* Analogy highlight box */
+  .analogy {
+    border-radius: 12px;
+    padding: 20px 22px;
+    margin: 16px 0;
+    border-left: 4px solid;
+  }
+
+  .analogy-title {
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    opacity: 0.7;
+  }
+
+  .analogy p { margin-bottom: 8px; font-size: 14.5px; }
+  .analogy p:last-child { margin-bottom: 0; }
+
+  .analogy.yellow { background: rgba(255,217,61,0.07); border-color: var(--yellow); color: #ffe88a; }
+  .analogy.yellow .analogy-title { color: var(--yellow); }
+  .analogy.green  { background: rgba(107,203,119,0.07); border-color: var(--green);  color: #a8e6af; }
+  .analogy.green  .analogy-title { color: var(--green); }
+  .analogy.blue   { background: rgba(78,205,196,0.07);  border-color: var(--blue);   color: #9ee8e4; }
+  .analogy.blue   .analogy-title { color: var(--blue); }
+  .analogy.orange { background: rgba(255,159,67,0.07);  border-color: var(--orange); color: #ffc88a; }
+  .analogy.orange .analogy-title { color: var(--orange); }
+  .analogy.purple { background: rgba(162,155,254,0.07); border-color: var(--purple); color: #c5c1ff; }
+  .analogy.purple .analogy-title { color: var(--purple); }
+  .analogy.pink   { background: rgba(253,121,168,0.07); border-color: var(--pink);   color: #ffb3cc; }
+  .analogy.pink   .analogy-title { color: var(--pink); }
+  .analogy.red    { background: rgba(255,107,107,0.07); border-color: var(--red);    color: #ffaaaa; }
+  .analogy.red    .analogy-title { color: var(--red); }
+
+  /* Keyword bubble */
+  .kw {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 0.92em;
+  }
+  .kw-y { background: rgba(255,217,61,0.15); color: var(--yellow); }
+  .kw-g { background: rgba(107,203,119,0.15); color: var(--green); }
+  .kw-b { background: rgba(78,205,196,0.15);  color: var(--blue); }
+  .kw-o { background: rgba(255,159,67,0.15);  color: var(--orange); }
+  .kw-p { background: rgba(162,155,254,0.15); color: var(--purple); }
+  .kw-r { background: rgba(255,107,107,0.15); color: var(--red); }
+  .kw-pk{ background: rgba(253,121,168,0.15); color: var(--pink); }
+
+  /* Flow diagram */
+  .flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 20px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 12px;
+    margin: 16px 0;
+  }
+  .flow-step {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+    min-width: 90px;
+  }
+  .flow-arrow {
+    font-size: 20px;
+    color: var(--dim);
+    flex-shrink: 0;
+  }
+
+  /* Comparison table */
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .compare-col {
+    background: rgba(255,255,255,0.03);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .compare-col h4 {
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .compare-col li {
+    font-size: 13px;
+    color: #c8d8e8;
+    margin-bottom: 6px;
+    list-style: none;
+    padding-left: 16px;
+    position: relative;
+  }
+  .compare-col li::before { content: '→'; position: absolute; left: 0; }
+
+  /* Summary box */
+  .summary-box {
+    background: linear-gradient(135deg, rgba(255,217,61,0.08) 0%, rgba(78,205,196,0.05) 100%);
+    border: 1px solid rgba(255,217,61,0.2);
+    border-radius: 16px;
+    padding: 28px;
+    margin: 40px 0;
+    text-align: center;
+  }
+  .summary-box h3 { font-size: 18px; color: var(--yellow); margin-bottom: 14px; }
+  .summary-box p { color: #c8d8e8; font-size: 14.5px; }
+
+  /* Tags */
+  .tag-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; justify-content: center; }
+  .tag {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: 13px;
+    color: var(--dim);
+  }
+
+  /* Divider */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+
+  /* Reveal animation */
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: none;
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge">📚 脳科学をかみ砕いて解説</div>
+  <div class="hero-emoji">🎮</div>
+  <h1>あなたの脳は<br>ゲームエンジンだった</h1>
+  <p class="hero-sub">難しすぎる「自由エネルギー原理」を、ゲーム・スポーツ・日常のたとえで中学生でもわかるように説明するよ</p>
+  <div class="scroll-hint">↓ スクロールしてね</div>
+</div>
+
+<div class="wrapper">
+
+  <!-- BIG Q -->
+  <div class="big-q reveal">
+    <h2>まず、<span>ひとつだけ</span>聞いていい？<br>あなたは今、この文字を「見ている」？</h2>
+  </div>
+
+  <div class="card reveal">
+    <p>「当たり前じゃん」って思うよね。でも実は、脳はカメラみたいに現実をそのまま映しているわけじゃない。</p>
+    <p><strong>脳は「こうなっているはず」という予測を常に作り出して、現実と照らし合わせながら世界を"作り上げている"</strong>んだ。</p>
+    <p>これが「自由エネルギー原理」という超難しい理論の、ものすごく簡単なまとめ。この話、「見る」だけじゃなくて「動く」「感じる」「病む」「好奇心を持つ」——全部に関係してくる。</p>
+  </div>
+
+  <hr class="divider">
+
+  <!-- SECTION 1 -->
+  <div class="section reveal">
+    <div class="section-label">
+      <div class="section-num" style="background:rgba(255,217,61,0.15);color:var(--yellow)">1</div>
+      <div class="section-title">👁️ 「見る」ってどういうこと？</div>
+    </div>
+
+    <div class="card">
+      <p>目は光をとらえるセンサーだ。でも目から入ってくる情報って、実は<strong>ぼやけてて、揺れてて、2Dの映像</strong>なんだよ。</p>
+      <p>なのになんで僕たちは「3Dの世界」を「はっきり」「ちゃんと」見られるんだろう？</p>
+    </div>
+
+    <div class="analogy yellow">
+      <div class="analogy-title">🎮 ゲームで例えると</div>
+      <p>RPGのゲームエンジンって、毎フレームごとに「次にどんな景色が来るか」を事前に予測して処理してるよね。プレイヤーが動く「前」から、次の場面を用意してる。</p>
+      <p><strong>脳も同じ。</strong>「この光の情報が入ってきたら、たぶん外はこうなってるはず」という予測を先に作って、実際の光とズレがあったら修正する——を毎秒ものすごい速さでやってる。</p>
+    </div>
+
+    <div class="card">
+      <p>このズレのことを<span class="kw kw-y">予測誤差</span>という。</p>
+      <p>「予測 → 実際の感覚と比べる → ズレがあれば予測を修正 → また予測する」のループをずっと繰り返すことで、「見えている」という感覚が生まれる。</p>
+    </div>
+
+    <div class="flow">
+      <div class="flow-step" style="border-color:rgba(255,217,61,0.3);color:var(--yellow)">脳が予測する</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">目から信号が来る</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step" style="border-color:rgba(255,107,107,0.3);color:var(--red)">ズレを計算</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step" style="border-color:rgba(78,205,196,0.3);color:var(--blue)">予測を修正</div>
+      <div class="flow-arrow">↺</div>
+    </div>
+
+    <div class="analogy green">
+      <div class="analogy-title">⚽ スポーツで例えると</div>
+      <p>サッカーのキーパーが「相手がシュートを打つ前」に動き始めるのと同じ。「こっちに来るはず」という予測で体を動かしてる。</p>
+      <p>脳も同じで、感覚信号が届く「前」から予測してて、違ったら素早く修正する。</p>
+    </div>
+  </div>
+
+  <!-- SECTION 2 -->
+  <div class="section reveal">
+    <div class="section-label">
+      <div class="section-num" style="background:rgba(107,203,119,0.15);color:var(--green)">2</div>
+      <div class="section-title">💪 「動く」はどうやって起きてる？</div>
+    </div>
+
+    <div class="card">
+      <p>「脳が筋肉に命令を出して動く」と思ってない？　実は違う。</p>
+      <p>脳が送るのは「命令」じゃなくて<strong>「こういう感覚になるはず」という予測</strong>なんだ。</p>
+    </div>
+
+    <div class="analogy blue">
+      <div class="analogy-title">🎮 ゲームで例えると</div>
+      <p>マリオが「ジャンプボタンを押したら、こんな軌道になるはず」というゲームエンジンの計算と同じ。</p>
+      <p>脳は「腕を上げたとき、筋肉はこんな感じになるはず」という予測を出す。実際の筋肉の感覚とズレがあると、そのズレを埋めるように筋肉が反射的に動く。これが「腕を上げる」という運動の正体！</p>
+    </div>
+
+    <div class="analogy yellow">
+      <div class="analogy-title">😆 自分でくすぐってもくすぐったくない理由</div>
+      <p>自分でわき腹をさわっても全然くすぐったくないけど、友達にやられると飛び上がるよね。</p>
+      <p>自分でさわる場合、脳は「今からこんな感触が来る」と予測できるからズレが小さい → くすぐったくない。</p>
+      <p>友達にやられる場合、予測できないからズレが大きい → めちゃくちゃくすぐったい。</p>
+      <p>これもぜんぶ「予測と現実のズレ」で説明できる！</p>
+    </div>
+  </div>
+
+  <!-- SECTION 3 -->
+  <div class="section reveal">
+    <div class="section-label">
+      <div class="section-num" style="background:rgba(253,121,168,0.15);color:var(--pink)">3</div>
+      <div class="section-title">❤️ 「感情」は内臓からくる</div>
+    </div>
+
+    <div class="card">
+      <p>「感情は心の話」と思ってない？　でも実は感情って、<strong>内臓（心臓・胃・腸）の状態を脳が推論した結果</strong>なんだ。</p>
+    </div>
+
+    <div class="analogy pink">
+      <div class="analogy-title">💘 吊り橋効果で考えると</div>
+      <p>揺れる吊り橋の上では、怖くて心臓がドキドキする。そのとき好きな人と一緒にいると、脳は「このドキドキは恋愛感情かも？」と推論して、恋愛感情が生まれる。</p>
+      <p>内臓の状態（心拍数アップ）＋状況の解釈（好きな人がいる）＝感情、という計算なんだ。</p>
+    </div>
+
+    <div class="analogy orange">
+      <div class="analogy-title">🍔 お腹が空く前に食べたくなる理由</div>
+      <p>「お腹が空いた！」と感じる前から、なんとなく食べ物が頭に浮かんでくることない？</p>
+      <p>脳は「このままだと血糖値が下がる」と予測して、先回りして「食べたい」という感覚を作り出してる。<strong>問題が起きる前に予防する</strong>これを「アロスタシス」という。</p>
+    </div>
+  </div>
+
+  <!-- SECTION 4 -->
+  <div class="section reveal">
+    <div class="section-label">
+      <div class="section-num" style="background:rgba(162,155,254,0.15);color:var(--purple)">4</div>
+      <div class="section-title">🎯 「注意」ってなんで必要なの？</div>
+    </div>
+
+    <div class="card">
+      <p>毎秒、目や耳から大量の情報が入ってくる。全部に同じ重みをつけてたら処理が追いつかない。だから脳は「この信号はどれくらい信頼できるか」という<span class="kw kw-p">精度</span>をつけてる。</p>
+      <p>「注意を向ける」というのは、<strong>特定の信号の精度を上げる</strong>こと。</p>
+    </div>
+
+    <div class="analogy purple">
+      <div class="analogy-title">🎮 ゲームのカメラワークで例えると</div>
+      <p>アクションゲームで、ボスと戦ってるときは「ボスの動き」にカメラが集中して、背景はぼかされるよね。</p>
+      <p>注意も同じ。重要なものの「解像度を上げて」、関係ないものは「ぼかす」操作。</p>
+    </div>
+
+    <div class="analogy blue">
+      <div class="analogy-title">💊 ドーパミンの本当の仕事</div>
+      <p>「ドーパミン＝やる気・快楽」って聞いたことある？　でもそれだけじゃない。</p>
+      <p>ドーパミンは「この信号はどれくらい信頼する？」という<strong>信頼度を調整するつまみ</strong>みたいなもの。</p>
+      <p>ゲームで言えば、「このアイテムを信頼してインベントリに入れるか、捨てるか」を決める判断力みたいなもの。パーキンソン病はドーパミンが足りなくて、この判断がうまくできなくなる病気。</p>
+    </div>
+  </div>
+
+  <!-- SECTION 5 -->
+  <div class="section reveal">
+    <div class="section-label">
+      <div class="section-num" style="background:rgba(255,217,61,0.15);color:var(--yellow)">5</div>
+      <div class="section-title">💡 好奇心・「わかった！」はなぜ気持ちいい？</div>
+    </div>
+
+    <div class="card">
+      <p>新しいことを知りたいとか、謎を解きたいという気持ち——これも自由エネルギー原理で説明できる。</p>
+      <p>脳にとって「わからないこと」はズレ（予測誤差）が大きい状態。それを解消したくて、調べたり探索したりする。それが<strong>好奇心の正体</strong>。</p>
+    </div>
+
+    <div class="analogy yellow">
+      <div class="analogy-title">🗺️ 探索ゲームで例えると</div>
+      <p>マインクラフトで、霧がかかってて見えない場所に「何があるんだろ？」って進んでいくあの感じ。</p>
+      <p>霧を晴らすと「わかった！」ってなる。これが「アハ体験」。脳が不確実性（霧）を解消できた瞬間に、快感が生まれる仕組みになってる。</p>
+    </div>
+
+    <div class="analogy green">
+      <div class="analogy-title">😴 なんで寝ると頭が整理される？</div>
+      <p>日中に学んだことって、寝ると不思議とスッキリ整理されてる感じがない？</p>
+      <p>睡眠中、脳は「使わない神経のつながりを削除」してる（シナプス刈り込み）。ごちゃごちゃのデータを整理してシンプルにする作業。これが「洞察（ひらめき）」につながる。</p>
+      <p><strong>難問を「一晩寝かせる」のは、科学的にもアリ！</strong></p>
+    </div>
+  </div>
+
+  <!-- SECTION 6 -->
+  <div class="section reveal">
+    <div class="section-label">
+      <div class="section-num" style="background:rgba(255,107,107,0.15);color:var(--red)">6</div>
+      <div class="section-title">🔬 統合失調症・自閉症はなぜ起きる？</div>
+    </div>
+
+    <div class="card">
+      <p>「精神疾患」というと難しそうだけど、この原理を使うとシンプルに理解できる。</p>
+      <p>要は「脳内の予測と感覚信号のバランスが崩れる」問題なんだ。</p>
+    </div>
+
+    <div class="compare">
+      <div class="compare-col" style="border:1px solid rgba(255,107,107,0.2)">
+        <h4 style="color:var(--red)">統合失調症</h4>
+        <li>予測信号が強すぎる</li>
+        <li>現実の感覚を無視しがち</li>
+        <li>「自分の動作が他人にやられた」と感じる（させられ体験）</li>
+        <li>幻覚・妄想（予測が現実を上書きする）</li>
+      </div>
+      <div class="compare-col" style="border:1px solid rgba(78,205,196,0.2)">
+        <h4 style="color:var(--blue)">自閉症</h4>
+        <li>予測信号が弱い</li>
+        <li>感覚信号が強すぎる</li>
+        <li>小さな音や光にも強く反応（感覚過敏）</li>
+        <li>予測できない状況（会話など）が苦手</li>
+      </div>
+    </div>
+
+    <div class="analogy orange">
+      <div class="analogy-title">🎮 ゲームの音量設定で例えると</div>
+      <p>統合失調症は「BGMの音量がデカすぎて、効果音（現実の感覚）が全部かき消されてる状態」。</p>
+      <p>自閉症は「効果音の感度が高すぎて、ちょっとした音でも爆音に聞こえてる状態」。</p>
+      <p>どちらも、音量バランス（精度制御）の問題として見ることができる。</p>
+    </div>
+  </div>
+
+  <!-- SECTION 7 -->
+  <div class="section reveal">
+    <div class="section-label">
+      <div class="section-num" style="background:rgba(78,205,196,0.15);color:var(--blue)">7</div>
+      <div class="section-title">🌱 意識って何？　「我思う、故に我あり」は違った</div>
+    </div>
+
+    <div class="card">
+      <p>哲学者のデカルトは「我思う、故に我あり（考えるから存在する）」と言った。</p>
+      <p>でもこの理論は逆だと言う。</p>
+      <p><strong>「我あるが故に我思う」</strong>——まず内臓感覚を通じて「自分がここにいる」と感じることで、初めて意識が生まれる。体が先、意識はその後。</p>
+    </div>
+
+    <div class="analogy purple">
+      <div class="analogy-title">🎮 キャラクターとプレイヤーの関係で例えると</div>
+      <p>ゲームのキャラクターは、世界とのインタラクション（感覚と行動）があるからこそ「存在している」と言える。キャラクターが世界と切り離されたら、もうそのキャラは「いる」とは言えない。</p>
+      <p>人間も同じ。世界を感じ（内臓感覚・外部感覚）、行動することで「自分」というものが形成される。意識は、その上に生まれる。</p>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- SUMMARY -->
+  <div class="summary-box reveal">
+    <h3>🧠 結局なにが言いたいか、一言で</h3>
+    <p style="font-size:16px;font-weight:700;color:var(--text);margin:12px 0 16px">
+      脳は「予測と現実のズレを減らし続ける機械」だ。
+    </p>
+    <p>見ること・動くこと・感じること・好奇心・感情・睡眠・病気・意識……<br>ぜんぶこの「ズレを減らす」という一つの原理から生まれてる。</p>
+  </div>
+
+  <!-- TAG SECTION -->
+  <div class="card reveal" style="text-align:center">
+    <p style="font-weight:700;color:var(--yellow);margin-bottom:4px">この原理で説明できること全部</p>
+    <div class="tag-row">
+      <span class="tag">👁️ 見る（知覚）</span>
+      <span class="tag">💪 動く（運動）</span>
+      <span class="tag">🎯 注意</span>
+      <span class="tag">❤️ 感情</span>
+      <span class="tag">💡 好奇心</span>
+      <span class="tag">😴 睡眠・ひらめき</span>
+      <span class="tag">🌡️ 体温調節</span>
+      <span class="tag">😰 パブロフの条件反射</span>
+      <span class="tag">🔬 統合失調症</span>
+      <span class="tag">🌈 自閉症</span>
+      <span class="tag">👶 赤ちゃんの発達</span>
+      <span class="tag">🐟 生物の進化</span>
+      <span class="tag">🌀 意識</span>
+    </div>
+  </div>
+
+  <div class="card reveal" style="margin-top:16px">
+    <p style="color:var(--dim);font-size:13px;text-align:center">
+      📚 元ネタ：『脳の大統一理論——自由エネルギー原理とはなにか』<br>
+      乾 敏郎・阪口 豊 著　岩波科学ライブラリー 299（2021年）
+    </p>
+  </div>
+
+</div>
+
+<script>
+  // Scroll reveal
+  const reveals = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.08 });
+  reveals.forEach(r => observer.observe(r));
+</script>
+
+</body>
+</html>
